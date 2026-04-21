@@ -283,13 +283,16 @@ input[type=text],input[type=number],input[type=password],input[type=date]{width:
       <div class="card">
         <div class="card-title">Registrar novedad</div>
         <select id="nov-delegado"></select>
-        <div class="form-row">
-          <select id="nov-tipo">
-            <option value="Vacaciones">🏖️ Vacaciones</option>
-            <option value="Incapacidad">🏥 Incapacidad</option>
-            <option value="Permiso">📝 Permiso</option>
-          </select>
-          <input type="date" id="nov-fecha">
+        <select id="nov-tipo" onchange="onTipoNovedadChange()">
+          <option value="Vacaciones">🏖️ Vacaciones</option>
+          <option value="Incapacidad">🏥 Incapacidad</option>
+          <option value="Permiso">📝 Permiso</option>
+        </select>
+        <div id="nov-rango-wrap">
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div style="flex:1;"><div style="font-size:11px;color:#888780;margin-bottom:4px;">Fecha inicio</div><input type="date" id="nov-fecha" style="margin-bottom:0;"></div>
+            <div style="flex:1;" id="nov-fechafin-wrap"><div style="font-size:11px;color:#888780;margin-bottom:4px;">Fecha fin</div><input type="date" id="nov-fechafin" style="margin-bottom:0;"></div>
+          </div>
         </div>
         <input type="text" id="nov-obs" placeholder="Observación (opcional)" style="margin-bottom:8px;">
         <button class="form-btn verde" style="width:100%;" onclick="addNovedad()">Guardar novedad</button>
@@ -343,7 +346,7 @@ input[type=text],input[type=number],input[type=password],input[type=date]{width:
 // ═══════════════════════════════════════════════
 // CONFIGURACION — Actualiza API_URL después del deploy
 // ═══════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbwuWGq2YCaqB0-l9_Tc2fcALC6Mr1Awn_xFOyvO2Laf5FoGjhRMEr3MYqIP8Sy_Rs4i/exec';
+const API_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI';
 
 // ─── STATE ─────────────────────────────────────
 const ST = {
@@ -761,6 +764,12 @@ async function cargarEstado() {
 }
 
 // ─── ADMIN: NOVEDADES ──────────────────────────
+function onTipoNovedadChange() {
+  const tipo = document.getElementById('nov-tipo').value;
+  const wrap = document.getElementById('nov-fechafin-wrap');
+  wrap.style.display = ['Vacaciones','Incapacidad'].includes(tipo) ? 'block' : 'none';
+}
+
 async function cargarDelegadosSelect() {
   const res = await api({ action:'getEstado', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
   if (!res.ok) return;
@@ -769,13 +778,15 @@ async function cargarDelegadosSelect() {
 }
 
 async function addNovedad() {
-  const cedula = document.getElementById('nov-delegado').value;
-  const tipo   = document.getElementById('nov-tipo').value;
-  const obs    = document.getElementById('nov-obs').value.trim();
-  const fechaEl= document.getElementById('nov-fecha').value;
-  const fecha  = fechaEl ? fechaEl.split('-').reverse().join('/') : '';
+  const cedula     = document.getElementById('nov-delegado').value;
+  const tipo       = document.getElementById('nov-tipo').value;
+  const obs        = document.getElementById('nov-obs').value.trim();
+  const fechaEl    = document.getElementById('nov-fecha').value;
+  const fechaFinEl = document.getElementById('nov-fechafin').value;
+  const fecha      = fechaEl    ? fechaEl.split('-').reverse().join('/')    : '';
+  const fechaFin   = fechaFinEl ? fechaFinEl.split('-').reverse().join('/') : fecha;
 
-  const res = await api({ action:'addNovedad', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId, cedula, tipo, obs, fecha });
+  const res = await api({ action:'addNovedad', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId, cedula, tipo, obs, fecha, fechaFin });
   if (res.ok) {
     document.getElementById('nov-obs').value = '';
     cargarNovedades();
@@ -813,10 +824,11 @@ async function generarCodigo() {
 
 // ─── ADMIN: API KEYS ───────────────────────────
 async function cargarAdminSelect() {
-  const res = await api({ action:'getEstado', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
-  if (!res.ok) return;
-  // For apikeys selector, load from admin sheet via estado (same workers)
+  const res = await api({ action:'getAdmins', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
   const sel = document.getElementById('apikey-cedula');
+  if (res.ok && res.admins) {
+    sel.innerHTML = res.admins.map(a => `<option value="${a.cedula}">${a.nombre}</option>`).join('');
+  }
   sel.innerHTML = (res.estado || []).map(w => `<option value="${w.cedula}">${w.nombre}</option>`).join('');
 }
 
