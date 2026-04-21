@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1F4E79">
+<title>Control de Asistencia</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1EFE8;color:#2C2C2A;min-height:100vh;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── TOP BAR ── */
+.topbar{background:#1F4E79;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:600;}
+.topbar-sub{font-size:12px;opacity:.75;margin-top:1px;}
+.topbar-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:16px;overflow-y:auto;}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:12px;border:.5px solid #D3D1C7;padding:16px;margin-bottom:12px;}
+.card-title{font-size:13px;font-weight:600;color:#5F5E5A;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;}
+
+/* ── TIPO JORNADA ── */
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.tipo-btn{background:#F1EFE8;border:.5px solid #D3D1C7;border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s;}
+.tipo-btn .ico{font-size:20px;display:block;margin-bottom:4px;}
+.tipo-btn .lbl{font-size:11px;color:#5F5E5A;line-height:1.3;}
+.tipo-btn.sel{background:#E6F1FB;border:1.5px solid #1F4E79;}
+.tipo-btn.sel .lbl{color:#0C447C;font-weight:600;}
+
+/* ── GPS ── */
+.gps-box{border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;}
+.gps-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.gps-checking{background:#FAEEDA;color:#854F0B;border:.5px solid #FAC775;}
+.gps-ok      {background:#EAF3DE;color:#3B6D11;border:.5px solid #C0DD97;}
+.gps-fail    {background:#FCEBEB;color:#A32D2D;border:.5px solid #F7C1C1;}
+.gps-libre   {background:#E6F1FB;color:#185FA5;border:.5px solid #B5D4F4;}
+.dot-amber{background:#EF9F27;}
+.dot-green{background:#639922;}
+.dot-red  {background:#E24B4A;}
+.dot-blue {background:#378ADD;}
+
+/* ── MAIN BUTTON ── */
+.main-btn{width:100%;padding:18px;border-radius:14px;border:none;font-size:17px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.01em;}
+.main-btn:active{transform:scale(.98);}
+.btn-ingreso{background:#1D9E75;color:#fff;}
+.btn-salida {background:#E24B4A;color:#fff;}
+.btn-disabled{background:#D3D1C7;color:#888780;cursor:not-allowed;}
+
+/* ── NOTA INPUT ── */
+.nota-wrap{display:none;margin-bottom:12px;}
+.nota-wrap.visible{display:block;}
+textarea{width:100%;padding:10px;border:.5px solid #D3D1C7;border-radius:10px;font-size:14px;resize:none;font-family:inherit;background:#fff;color:#2C2C2A;}
+
+/* ── CONJUNTO SELECTOR ── */
+select{width:100%;padding:10px 12px;border:.5px solid #D3D1C7;border-radius:10px;font-size:14px;background:#fff;color:#2C2C2A;margin-bottom:12px;}
+
+/* ── LOG ── */
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid #F1EFE8;font-size:13px;}
+.log-item:last-child{border-bottom:none;}
+.log-badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600;}
+.b-completo   {background:#EAF3DE;color:#3B6D11;}
+.b-enturno    {background:#E6F1FB;color:#185FA5;}
+.b-incompleto {background:#FAEEDA;color:#854F0B;}
+.b-muyincom   {background:#FCEBEB;color:#A32D2D;}
+.b-imprevisto {background:#EEEDFE;color:#534AB7;}
+.b-novedad    {background:#FAEEDA;color:#854F0B;}
+.b-sinreg     {background:#F1EFE8;color:#888780;}
+.b-ingreso    {background:#E6F1FB;color:#185FA5;}
+.b-salida     {background:#FCEBEB;color:#A32D2D;}
+.b-gris       {background:#F1EFE8;color:#888780;}
+
+/* ── ACTIVACION ── */
+.activar-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:#1F4E79;}
+.activar-card{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:360px;}
+.activar-logo{font-size:32px;text-align:center;margin-bottom:12px;}
+.activar-title{font-size:18px;font-weight:700;text-align:center;color:#1F4E79;margin-bottom:4px;}
+.activar-sub  {font-size:13px;text-align:center;color:#888780;margin-bottom:20px;}
+input[type=text],input[type=number],input[type=password],input[type=date]{width:100%;padding:12px;border:.5px solid #D3D1C7;border-radius:10px;font-size:15px;font-family:inherit;background:#fff;color:#2C2C2A;margin-bottom:12px;}
+.activar-btn{width:100%;padding:14px;border-radius:12px;border:none;background:#1F4E79;color:#fff;font-size:16px;font-weight:600;cursor:pointer;}
+.activar-btn:active{transform:scale(.98);}
+.or-link{text-align:center;margin-top:12px;font-size:13px;color:#5F5E5A;cursor:pointer;text-decoration:underline;}
+.error-msg{background:#FCEBEB;color:#A32D2D;border-radius:8px;padding:10px;font-size:13px;margin-bottom:10px;display:none;}
+
+/* ── ADMIN ── */
+.tab-row{display:flex;border-bottom:.5px solid #D3D1C7;margin-bottom:16px;}
+.atab{flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;color:#888780;border-bottom:2px solid transparent;}
+.atab.on{color:#1F4E79;border-bottom:2px solid #1F4E79;font-weight:600;}
+.pview{display:none;}
+.pview.on{display:block;}
+
+/* ── WORKER ROW ── */
+.worker-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid #F1EFE8;}
+.worker-row:last-child{border-bottom:none;}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.worker-info{flex:1;min-width:0;}
+.worker-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.worker-detail{font-size:11px;color:#888780;}
+
+/* ── FORM ROWS ── */
+.form-row{display:flex;gap:8px;margin-bottom:8px;}
+.form-row select,.form-row input{flex:1;margin-bottom:0;}
+.form-btn{background:#1F4E79;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.form-btn:active{transform:scale(.98);}
+.form-btn.danger{background:#A32D2D;}
+.form-btn.verde{background:#1D9E75;}
+
+/* ── CODIGO BOX ── */
+.codigo-box{background:#EAF3DE;border-radius:12px;padding:16px;text-align:center;margin-top:10px;display:none;}
+.codigo-val{font-size:32px;font-weight:700;color:#1D9E75;letter-spacing:.1em;font-family:monospace;}
+.codigo-sub{font-size:12px;color:#3B6D11;margin-top:4px;}
+
+/* ── METRICS ── */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.metric{background:#F1EFE8;border-radius:10px;padding:12px;text-align:center;}
+.metric-val{font-size:22px;font-weight:700;}
+.metric-lbl{font-size:11px;color:#888780;margin-top:2px;}
+
+/* ── LOADING ── */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#1F4E79;color:#fff;gap:12px;}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── UTILS ── */
+.mt8{margin-top:8px;}
+.mt12{margin-top:12px;}
+.sep{height:.5px;background:#F1EFE8;margin:8px 0;}
+.empty-msg{text-align:center;color:#888780;font-size:13px;padding:20px 0;}
+.confirm-banner{border-radius:12px;padding:14px;text-align:center;margin-top:12px;}
+.confirm-banner.ing{background:#EAF3DE;border:.5px solid #C0DD97;}
+.confirm-banner.sal{background:#FCEBEB;border:.5px solid #F7C1C1;}
+.confirm-hora{font-size:26px;font-weight:700;}
+.confirm-sub{font-size:12px;color:#888780;margin-top:4px;}
+.horas-pill{display:inline-block;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:600;margin-top:6px;}
+.pill-verde  {background:#EAF3DE;color:#3B6D11;}
+.pill-amarillo{background:#FAEEDA;color:#854F0B;}
+.pill-rojo   {background:#FCEBEB;color:#A32D2D;}
+.pill-gris   {background:#F1EFE8;color:#888780;}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADING ═══════════════════════════════ -->
+<div id="s-loading" class="screen active">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div style="font-size:14px;opacity:.8;">Iniciando sistema...</div>
+  </div>
+</div>
+
+<!-- ═══ ACTIVACION ════════════════════════════ -->
+<div id="s-activar" class="screen">
+  <div class="activar-wrap">
+    <div class="activar-card">
+      <div class="activar-logo">🏢</div>
+      <div class="activar-title">Control de Asistencia</div>
+      <div class="activar-sub">Primer acceso — activa tu dispositivo</div>
+      <div class="error-msg" id="act-error"></div>
+      <input type="number" id="act-cedula" placeholder="Número de cédula" inputmode="numeric">
+      <input type="text" id="act-codigo" placeholder="Código de activación (6 caracteres)" maxlength="6" style="text-transform:uppercase;">
+      <div style="margin-bottom:12px;">
+        <label style="font-size:13px;color:#888780;display:block;margin-bottom:6px;">Tipo de cuenta</label>
+        <select id="act-tipo">
+          <option value="delegado">Delegado</option>
+          <option value="admin">Equipo Admin</option>
+        </select>
+      </div>
+      <button class="activar-btn" onclick="activar()">Activar dispositivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DELEGADO ══════════════════════════════ -->
+<div id="s-delegado" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="del-nombre">Cargando...</div>
+      <div class="topbar-sub" id="del-fecha"></div>
+    </div>
+    <button class="topbar-btn" onclick="irAdminLogin()">Admin</button>
+  </div>
+
+  <div class="content">
+    <!-- Selector conjunto -->
+    <div class="card" id="conjunto-card">
+      <div class="card-title">¿En qué conjunto estás?</div>
+      <select id="del-conjunto" onchange="onConjuntoChange()"></select>
+    </div>
+
+    <!-- Tipo de jornada -->
+    <div class="card">
+      <div class="card-title">Tipo de jornada</div>
+      <div class="tipo-grid">
+        <div class="tipo-btn sel" id="tipo-Conjunto"      onclick="selTipo('Conjunto')"><span class="ico">🏘️</span><span class="lbl">Conjunto</span></div>
+        <div class="tipo-btn"    id="tipo-Oficina"        onclick="selTipo('Oficina')"><span class="ico">🏢</span><span class="lbl">Oficina</span></div>
+        <div class="tipo-btn"    id="tipo-Capacitacion"   onclick="selTipo('Capacitacion')"><span class="ico">📚</span><span class="lbl">Capacitación</span></div>
+        <div class="tipo-btn"    id="tipo-CambioDeTurno"  onclick="selTipo('CambioDeTurno')"><span class="ico">🔄</span><span class="lbl">Cambio turno</span></div>
+        <div class="tipo-btn"    id="tipo-Imprevisto"     onclick="selTipo('Imprevisto')"><span class="ico">🚨</span><span class="lbl">Imprevisto</span></div>
+      </div>
+    </div>
+
+    <!-- Nota (para imprevisto) -->
+    <div class="nota-wrap" id="nota-wrap">
+      <textarea id="nota-text" rows="2" placeholder="Describe brevemente el imprevisto..."></textarea>
+    </div>
+
+    <!-- GPS -->
+    <div class="card">
+      <div class="card-title">Verificación de ubicación</div>
+      <div class="gps-box gps-checking" id="gps-box">
+        <div class="gps-dot dot-amber" id="gps-dot"></div>
+        <span id="gps-txt">Toca para verificar ubicación</span>
+      </div>
+      <button class="form-btn verde" style="width:100%;margin-top:10px;" onclick="verificarGPS()">Verificar ubicación GPS</button>
+    </div>
+
+    <!-- Botón principal -->
+    <button class="main-btn btn-disabled" id="main-btn" onclick="registrar()" disabled>Verificando...</button>
+
+    <!-- Confirmación -->
+    <div id="confirm-area"></div>
+
+    <!-- Log del día -->
+    <div class="card mt12">
+      <div class="card-title">Registros de hoy</div>
+      <div id="del-log"><div class="empty-msg">Sin registros aún</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN LOGIN ════════════════════════════ -->
+<div id="s-admin-login" class="screen">
+  <div class="activar-wrap" style="background:#3C3489;">
+    <div class="activar-card">
+      <div class="activar-logo">🔐</div>
+      <div class="activar-title">Panel Administrador</div>
+      <div class="activar-sub">Tu dispositivo debe estar activado como admin</div>
+      <div class="error-msg" id="al-error"></div>
+      <input type="number" id="al-cedula" placeholder="Número de cédula" inputmode="numeric">
+      <button class="activar-btn" style="background:#3C3489;" onclick="adminLogin()">Ingresar</button>
+      <div class="or-link" onclick="goScreen('s-delegado')">← Volver a mi registro</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN DASHBOARD ════════════════════════ -->
+<div id="s-admin" class="screen">
+  <div class="topbar" style="background:#3C3489;">
+    <div>
+      <div class="topbar-title" id="adm-nombre">Admin</div>
+      <div class="topbar-sub" id="adm-fecha"></div>
+    </div>
+    <button class="topbar-btn" onclick="cerrarAdmin()">Salir</button>
+  </div>
+
+  <div class="content">
+    <div class="tab-row">
+      <div class="atab on"  id="tab-estado"     onclick="switchTab('estado')">Hoy</div>
+      <div class="atab"     id="tab-novedades"   onclick="switchTab('novedades')">Novedades</div>
+      <div class="atab"     id="tab-activar"     onclick="switchTab('activar')">Activar</div>
+      <div class="atab"     id="tab-apikeys"     onclick="switchTab('apikeys')">WhatsApp</div>
+    </div>
+
+    <!-- TAB: Estado hoy -->
+    <div class="pview on" id="pv-estado">
+      <div class="metrics-grid" id="adm-metrics"></div>
+      <div class="card">
+        <div class="card-title">Estado delegados</div>
+        <div id="adm-workers"><div class="empty-msg">Cargando...</div></div>
+      </div>
+      <button class="form-btn verde" style="width:100%;margin-top:4px;" onclick="cargarEstado()">Actualizar</button>
+    </div>
+
+    <!-- TAB: Novedades -->
+    <div class="pview" id="pv-novedades">
+      <div class="card">
+        <div class="card-title">Registrar novedad</div>
+        <select id="nov-delegado"></select>
+        <select id="nov-tipo" onchange="onTipoNovedadChange()">
+          <option value="Vacaciones">🏖️ Vacaciones</option>
+          <option value="Incapacidad">🏥 Incapacidad</option>
+          <option value="Permiso">📝 Permiso</option>
+        </select>
+        <div id="nov-rango-wrap">
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div style="flex:1;"><div style="font-size:11px;color:#888780;margin-bottom:4px;">Fecha inicio</div><input type="date" id="nov-fecha" style="margin-bottom:0;"></div>
+            <div style="flex:1;" id="nov-fechafin-wrap"><div style="font-size:11px;color:#888780;margin-bottom:4px;">Fecha fin</div><input type="date" id="nov-fechafin" style="margin-bottom:0;"></div>
+          </div>
+        </div>
+        <input type="text" id="nov-obs" placeholder="Observación (opcional)" style="margin-bottom:8px;">
+        <button class="form-btn verde" style="width:100%;" onclick="addNovedad()">Guardar novedad</button>
+      </div>
+      <div class="card mt8">
+        <div class="card-title">Novedades recientes</div>
+        <div id="nov-lista"><div class="empty-msg">Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: Activar -->
+    <div class="pview" id="pv-activar">
+      <div class="card">
+        <div class="card-title">Generar código de activación</div>
+        <div style="font-size:12px;color:#888780;margin-bottom:10px;">Genera un código para que el delegado o admin active su celular por primera vez.</div>
+        <input type="number" id="act-target-cedula" placeholder="Cédula del delegado / admin" inputmode="numeric">
+        <div class="form-row">
+          <select id="act-target-tipo">
+            <option value="delegado">Delegado</option>
+            <option value="admin">Equipo Admin</option>
+          </select>
+          <button class="form-btn verde" onclick="generarCodigo()">Generar</button>
+        </div>
+        <div class="codigo-box" id="codigo-result">
+          <div style="font-size:13px;color:#3B6D11;margin-bottom:4px;" id="codigo-nombre"></div>
+          <div class="codigo-val" id="codigo-val"></div>
+          <div class="codigo-sub">Código de un solo uso · válido hasta ser usado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: WhatsApp API Keys -->
+    <div class="pview" id="pv-apikeys">
+      <div class="card">
+        <div class="card-title">Configurar alertas WhatsApp</div>
+        <div style="font-size:12px;color:#888780;margin-bottom:12px;line-height:1.6;">
+          Cada miembro del equipo debe:<br>
+          1. Agregar <strong>+34 644 52 74 27</strong> a sus contactos<br>
+          2. Enviarle: <em>I allow callmebot to send me messages</em><br>
+          3. Recibirá su API key — ingrésala aquí
+        </div>
+        <select id="apikey-cedula" style="margin-bottom:8px;"></select>
+        <input type="text" id="apikey-val" placeholder="API key recibida de CallMeBot">
+        <button class="form-btn verde" style="width:100%;" onclick="guardarApiKey()">Guardar API key</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIGURACION — Actualiza API_URL después del deploy
+// ═══════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbz4Io2u5EggBLIdDv2WVfZyO60Fpwol3W1YvCUlPgq_HSVnKhpxlHrWNaVWsRJFZ15i/exec';
+
+// ─── STATE ─────────────────────────────────────
+const ST = {
+  cedula: null, dispId: null, tipo: null, nombre: null,
+  config: null,
+  tipoJornada: 'Conjunto',
+  gpsOk: false, gpsLat: null, gpsLng: null,
+  selectedConjunto: null,
+  hasIngreso: false,
+  adminCedula: null, adminDispId: null, adminNombre: null,
+};
+
+// ─── INIT ──────────────────────────────────────
+window.addEventListener('load', () => {
+  ST.cedula = localStorage.getItem('asis_cedula');
+  ST.dispId = localStorage.getItem('asis_dispId') || generarDispId();
+  ST.tipo   = localStorage.getItem('asis_tipo');
+  ST.nombre = localStorage.getItem('asis_nombre');
+
+  if (!ST.cedula) { goScreen('s-activar'); return; }
+
+  if (ST.tipo === 'delegado') {
+    cargarConfigDelegado();
+  } else if (ST.tipo === 'admin') {
+    goScreen('s-admin-login');
+  } else {
+    goScreen('s-activar');
+  }
+});
+
+function generarDispId() {
+  const id = 'D_' + Date.now() + '_' + Math.random().toString(36).substring(2,10);
+  localStorage.setItem('asis_dispId', id);
+  return id;
+}
+
+// ─── NAVEGACION ────────────────────────────────
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function irAdminLogin() { goScreen('s-admin-login'); }
+function cerrarAdmin()  { goScreen('s-delegado'); }
+
+// ─── API ───────────────────────────────────────
+async function api(params) {
+  const url = API_URL + '?' + new URLSearchParams(params).toString();
+  const resp = await fetch(url);
+  return await resp.json();
+}
+
+// ─── ACTIVACION ────────────────────────────────
+async function activar() {
+  const cedula = document.getElementById('act-cedula').value.trim();
+  const codigo = document.getElementById('act-codigo').value.trim().toUpperCase();
+  const tipo   = document.getElementById('act-tipo').value;
+  const err    = document.getElementById('act-error');
+
+  if (!cedula || !codigo) { showErr(err, 'Ingresa tu cédula y el código de activación'); return; }
+  if (codigo.length < 4)  { showErr(err, 'El código debe tener al menos 4 caracteres'); return; }
+
+  err.style.display = 'none';
+  const res = await api({ action:'activar', cedula, codigo, dispId: ST.dispId, tipo });
+
+  if (!res.ok) { showErr(err, res.error || 'Error al activar'); return; }
+
+  localStorage.setItem('asis_cedula', cedula);
+  localStorage.setItem('asis_tipo',   tipo);
+  localStorage.setItem('asis_nombre', res.nombre);
+  ST.cedula = cedula; ST.tipo = tipo; ST.nombre = res.nombre;
+
+  if (tipo === 'delegado') {
+    cargarConfigDelegado();
+  } else {
+    goScreen('s-admin-login');
+  }
+}
+
+function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+// ─── DELEGADO ──────────────────────────────────
+async function cargarConfigDelegado() {
+  const res = await api({ action:'getConfig', cedula: ST.cedula, dispId: ST.dispId });
+
+  if (!res.ok) {
+    if (res.error && res.error.includes('no autorizado')) {
+      localStorage.clear();
+      goScreen('s-activar');
+      return;
+    }
+    goScreen('s-activar');
+    return;
+  }
+
+  ST.config = res;
+  renderDelegado();
+}
+
+function renderDelegado() {
+  const cfg = ST.config;
+  document.getElementById('del-nombre').textContent = cfg.nombre;
+  document.getElementById('del-fecha').textContent  = 'Hoy: ' + cfg.hoy + ' · ' + cfg.horaActual.substring(0,5);
+
+  // Poblar selector de conjuntos
+  const sel = document.getElementById('del-conjunto');
+  sel.innerHTML = '';
+  cfg.conjuntos.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.nombre;
+    opt.textContent = c.nombre + (c.turno ? ' — ' + c.turno : '');
+    sel.appendChild(opt);
+  });
+
+  onConjuntoChange();
+  renderLog(cfg.registrosHoy);
+  goScreen('s-delegado');
+}
+
+function onConjuntoChange() {
+  const nombre = document.getElementById('del-conjunto').value;
+  ST.selectedConjunto = ST.config ? ST.config.conjuntos.find(c => c.nombre === nombre) : null;
+  ST.gpsOk = false;
+  resetGPS();
+  resetBtn();
+  document.getElementById('confirm-area').innerHTML = '';
+  checkHasIngreso();
+}
+
+function checkHasIngreso() {
+  if (!ST.config || !ST.selectedConjunto) return;
+  const nombre = ST.selectedConjunto.nombre;
+  ST.hasIngreso = ST.config.registrosHoy.some(r => r.conjunto === nombre && r.evento === 'Ingreso' &&
+    !ST.config.registrosHoy.some(r2 => r2.conjunto === nombre && r2.evento === 'Salida'));
+  updateBtn();
+}
+
+// ─── TIPO JORNADA ──────────────────────────────
+function selTipo(tipo) {
+  document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('tipo-' + tipo).classList.add('sel');
+  ST.tipoJornada = tipo;
+  document.getElementById('nota-wrap').classList.toggle('visible', tipo === 'Imprevisto');
+  ST.gpsOk = false;
+  resetGPS();
+  resetBtn();
+}
+
+// ─── GPS ───────────────────────────────────────
+function resetGPS() {
+  const box = document.getElementById('gps-box');
+  const dot = document.getElementById('gps-dot');
+  const txt = document.getElementById('gps-txt');
+  box.className = 'gps-box gps-checking';
+  dot.className = 'gps-dot dot-amber';
+  txt.textContent = 'Toca para verificar ubicación';
+}
+
+async function verificarGPS() {
+  const box = document.getElementById('gps-box');
+  const dot = document.getElementById('gps-dot');
+  const txt = document.getElementById('gps-txt');
+
+  if (['Oficina','Capacitacion'].includes(ST.tipoJornada)) {
+    ST.gpsOk = true;
+    box.className = 'gps-box gps-libre';
+    dot.className = 'gps-dot dot-blue';
+    txt.textContent = 'GPS libre — ' + ST.tipoJornada;
+    updateBtn();
+    return;
+  }
+
+  box.className = 'gps-box gps-checking';
+  dot.className = 'gps-dot dot-amber';
+  txt.textContent = 'Verificando ubicación...';
+
+  if (!navigator.geolocation) {
+    txt.textContent = 'GPS no disponible en este dispositivo';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      ST.gpsLat = pos.coords.latitude;
+      ST.gpsLng = pos.coords.longitude;
+
+      const conj = ST.selectedConjunto;
+      if (!conj || !conj.lat || !conj.lng) {
+        // Sin coordenadas configuradas — permitir pero marcar
+        ST.gpsOk = true;
+        box.className = 'gps-box gps-libre';
+        dot.className = 'gps-dot dot-blue';
+        txt.textContent = 'GPS no configurado para este conjunto — se permite el registro';
+        updateBtn();
+        return;
+      }
+
+      const dist = haversine(ST.gpsLat, ST.gpsLng, conj.lat, conj.lng);
+      const radio = conj.radio || 80;
+
+      if (dist <= radio) {
+        ST.gpsOk = true;
+        box.className = 'gps-box gps-ok';
+        dot.className = 'gps-dot dot-green';
+        txt.textContent = 'Ubicación verificada (' + Math.round(dist) + 'm del conjunto)';
+        updateBtn();
+      } else {
+        ST.gpsOk = false;
+        box.className = 'gps-box gps-fail';
+        dot.className = 'gps-dot dot-red';
+        txt.textContent = 'Fuera del rango — estás a ' + Math.round(dist) + 'm (máx ' + radio + 'm)';
+        resetBtn();
+      }
+    },
+    err => {
+      box.className = 'gps-box gps-fail';
+      dot.className = 'gps-dot dot-red';
+      txt.textContent = 'No se pudo obtener ubicación. Activa el GPS.';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ─── BOTÓN PRINCIPAL ───────────────────────────
+function resetBtn() {
+  const btn = document.getElementById('main-btn');
+  btn.className = 'main-btn btn-disabled';
+  btn.disabled  = true;
+  btn.textContent = 'Verifica la ubicación primero';
+}
+
+function updateBtn() {
+  if (!ST.gpsOk) { resetBtn(); return; }
+  const btn = document.getElementById('main-btn');
+  btn.disabled = false;
+  if (!ST.hasIngreso) {
+    btn.className = 'main-btn btn-ingreso';
+    btn.textContent = '✔ Registrar Ingreso';
+  } else {
+    btn.className = 'main-btn btn-salida';
+    btn.textContent = '✔ Registrar Salida';
+  }
+}
+
+async function registrar() {
+  const btn   = document.getElementById('main-btn');
+  const conj  = ST.selectedConjunto;
+  if (!conj || !ST.gpsOk) return;
+
+  const evento = ST.hasIngreso ? 'Salida' : 'Ingreso';
+  const nota   = document.getElementById('nota-text').value.trim();
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
+  const res = await api({
+    action:   'registrar',
+    cedula:   ST.cedula,
+    dispId:   ST.dispId,
+    evento,
+    tipoJ:    ST.tipoJornada,
+    conjunto: conj.nombre,
+    turno:    conj.turno || '',
+    nota,
+  });
+
+  if (!res.ok) {
+    btn.disabled = false;
+    updateBtn();
+    alert('Error: ' + (res.error || 'No se pudo registrar'));
+    return;
+  }
+
+  // Actualizar estado
+  if (evento === 'Ingreso') {
+    ST.hasIngreso = true;
+    const conf = document.getElementById('confirm-area');
+    conf.innerHTML = `<div class="confirm-banner ing"><div style="font-size:13px;color:#3B6D11;font-weight:600;">Ingreso registrado</div><div class="confirm-hora" style="color:#1D9E75;">${res.hora.substring(0,5)}</div><div class="confirm-sub">${conj.nombre}</div></div>`;
+  } else {
+    ST.hasIngreso = false;
+    const pill = res.estado === 'Sin evaluacion' ? '<span class="horas-pill pill-gris">Sin evaluación</span>'
+               : res.estado === 'Imprevisto'      ? '<span class="horas-pill pill-gris">Imprevisto registrado</span>'
+               : res.estado === 'Completo'        ? `<span class="horas-pill pill-verde">Jornada completa · ${res.horas}h</span>`
+               : res.estado === 'Incompleto'      ? `<span class="horas-pill pill-amarillo">Incompleto · ${res.horas}h</span>`
+               : `<span class="horas-pill pill-rojo">Muy incompleto · ${res.horas}h</span>`;
+    const conf = document.getElementById('confirm-area');
+    conf.innerHTML = `<div class="confirm-banner sal"><div style="font-size:13px;color:#A32D2D;font-weight:600;">Salida registrada</div><div class="confirm-hora" style="color:#E24B4A;">${res.hora.substring(0,5)}</div><div class="confirm-sub">${conj.nombre}</div>${pill}</div>`;
+  }
+
+  // Agregar al log local
+  const logReg = { hora: res.hora, conjunto: conj.nombre, evento, tipo: ST.tipoJornada, estado: res.estado };
+  if (!ST.config.registrosHoy) ST.config.registrosHoy = [];
+  ST.config.registrosHoy.push(logReg);
+  renderLog(ST.config.registrosHoy);
+
+  ST.gpsOk = false;
+  resetGPS();
+  updateBtn();
+}
+
+// ─── LOG ───────────────────────────────────────
+function renderLog(regs) {
+  const el = document.getElementById('del-log');
+  if (!regs || regs.length === 0) { el.innerHTML = '<div class="empty-msg">Sin registros aún</div>'; return; }
+  el.innerHTML = [...regs].reverse().map(r => {
+    const badge = r.evento === 'Ingreso' ? 'b-ingreso' : estadoBadge(r.estado);
+    const label = r.evento === 'Ingreso' ? 'Ingreso' : r.estado || 'Salida';
+    return `<div class="log-item"><div><div style="font-weight:600;">${r.evento}</div><div style="font-size:11px;color:#888780;">${r.hora ? r.hora.substring(0,5) : ''} · ${r.conjunto}</div></div><span class="log-badge ${badge}">${label}</span></div>`;
+  }).join('');
+}
+
+function estadoBadge(est) {
+  if (!est) return 'b-gris';
+  if (est === 'Completo')       return 'b-completo';
+  if (est === 'En turno')       return 'b-enturno';
+  if (est === 'Incompleto')     return 'b-incompleto';
+  if (est === 'Muy incompleto') return 'b-muyincom';
+  if (est === 'Imprevisto')     return 'b-imprevisto';
+  if (est === 'Sin evaluacion') return 'b-gris';
+  return 'b-gris';
+}
+
+// ─── ADMIN LOGIN ───────────────────────────────
+async function adminLogin() {
+  const cedula = document.getElementById('al-cedula').value.trim();
+  const err    = document.getElementById('al-error');
+  if (!cedula) { showErr(err, 'Ingresa tu cédula'); return; }
+
+  err.style.display = 'none';
+  const res = await api({ action:'adminLogin', cedula, dispId: ST.dispId });
+
+  if (!res.ok) { showErr(err, res.error || 'No autorizado. Verifica que tu dispositivo esté activado como admin.'); return; }
+
+  ST.adminCedula  = cedula;
+  ST.adminDispId  = ST.dispId;
+  ST.adminNombre  = res.nombre;
+
+  document.getElementById('adm-nombre').textContent = res.nombre + ' · ' + res.rol;
+  document.getElementById('adm-fecha').textContent  = 'Panel administrador';
+
+  cargarEstado();
+  cargarDelegadosSelect();
+  cargarAdminSelect();
+  setFechaHoy();
+  goScreen('s-admin');
+}
+
+function setFechaHoy() {
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  const mm   = String(hoy.getMonth()+1).padStart(2,'0');
+  const dd   = String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('nov-fecha').value = `${yyyy}-${mm}-${dd}`;
+}
+
+// ─── ADMIN TABS ────────────────────────────────
+function switchTab(t) {
+  ['estado','novedades','activar','apikeys'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('on', x===t);
+    document.getElementById('pv-'+x).classList.toggle('on', x===t);
+  });
+  if (t === 'novedades') cargarNovedades();
+}
+
+// ─── ADMIN: ESTADO ─────────────────────────────
+async function cargarEstado() {
+  const res = await api({ action:'getEstado', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
+  if (!res.ok) return;
+
+  const est = res.estado || [];
+  const total   = est.length;
+  const compl   = est.filter(w => w.semaforo === 'completo').length;
+  const enTurno = est.filter(w => w.semaforo === 'en-turno').length;
+  const alerta  = est.filter(w => ['muy-incompleto','sin-registro'].includes(w.semaforo)).length;
+
+  document.getElementById('adm-metrics').innerHTML = [
+    ['Total',     total,   '#2C2C2A'],
+    ['En turno',  enTurno, '#185FA5'],
+    ['Completos', compl,   '#3B6D11'],
+    ['Alertas',   alerta,  '#A32D2D'],
+  ].map(([l,v,c]) => `<div class="metric"><div class="metric-val" style="color:${c}">${v}</div><div class="metric-lbl">${l}</div></div>`).join('');
+
+  const semColors = {
+    'completo':      ['b-completo',   'Completo'],
+    'en-turno':      ['b-enturno',    'En turno'],
+    'incompleto':    ['b-incompleto', 'Incompleto'],
+    'muy-incompleto':['b-muyincom',   'Muy incompleto'],
+    'imprevisto':    ['b-imprevisto', 'Imprevisto'],
+    'novedad':       ['b-novedad',    'Novedad'],
+    'sin-registro':  ['b-sinreg',     'Sin registro'],
+  };
+
+  document.getElementById('adm-workers').innerHTML = est.length === 0
+    ? '<div class="empty-msg">Sin datos</div>'
+    : est.map(w => {
+        const [bc, bl] = semColors[w.semaforo] || ['b-gris','Desconocido'];
+        const avColors = { 'completo':'#EAF3DE','en-turno':'#E6F1FB','incompleto':'#FAEEDA','muy-incompleto':'#FCEBEB','novedad':'#FAEEDA','sin-registro':'#F1EFE8','imprevisto':'#EEEDFE' };
+        const avTxt    = { 'completo':'#3B6D11','en-turno':'#185FA5','incompleto':'#854F0B','muy-incompleto':'#A32D2D','novedad':'#854F0B','sin-registro':'#888780','imprevisto':'#534AB7' };
+        const ini = w.nombre.split(' ').slice(0,2).map(p=>p[0]).join('');
+        const detail = w.ultimoEvento ? `${w.ultimoEvento} ${w.ultimaHora ? w.ultimaHora.substring(0,5) : ''}` : (w.novedad || w.conj1);
+        return `<div class="worker-row">
+          <div class="avatar" style="background:${avColors[w.semaforo]};color:${avTxt[w.semaforo]}">${ini}</div>
+          <div class="worker-info"><div class="worker-name">${w.nombre}</div><div class="worker-detail">${detail}</div></div>
+          <span class="log-badge ${bc}">${bl}</span>
+        </div>`;
+      }).join('');
+}
+
+// ─── ADMIN: NOVEDADES ──────────────────────────
+function onTipoNovedadChange() {
+  const tipo = document.getElementById('nov-tipo').value;
+  const wrap = document.getElementById('nov-fechafin-wrap');
+  wrap.style.display = ['Vacaciones','Incapacidad'].includes(tipo) ? 'block' : 'none';
+}
+
+async function cargarDelegadosSelect() {
+  const res = await api({ action:'getEstado', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
+  if (!res.ok) return;
+  const sel = document.getElementById('nov-delegado');
+  sel.innerHTML = (res.estado || []).map(w => `<option value="${w.cedula}">${w.nombre}</option>`).join('');
+}
+
+async function addNovedad() {
+  const cedula     = document.getElementById('nov-delegado').value;
+  const tipo       = document.getElementById('nov-tipo').value;
+  const obs        = document.getElementById('nov-obs').value.trim();
+  const fechaEl    = document.getElementById('nov-fecha').value;
+  const fechaFinEl = document.getElementById('nov-fechafin').value;
+  const fecha      = fechaEl    ? fechaEl.split('-').reverse().join('/')    : '';
+  const fechaFin   = fechaFinEl ? fechaFinEl.split('-').reverse().join('/') : fecha;
+
+  const res = await api({ action:'addNovedad', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId, cedula, tipo, obs, fecha, fechaFin });
+  if (res.ok) {
+    document.getElementById('nov-obs').value = '';
+    cargarNovedades();
+    alert('Novedad registrada correctamente');
+  } else {
+    alert('Error: ' + (res.error || 'No se pudo guardar'));
+  }
+}
+
+async function cargarNovedades() {
+  const res = await api({ action:'getNovedades', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
+  const el  = document.getElementById('nov-lista');
+  if (!res.ok || !res.novedades.length) { el.innerHTML = '<div class="empty-msg">Sin novedades</div>'; return; }
+  const colors = { 'Vacaciones':['b-completo','🏖️'],'Incapacidad':['b-muyincom','🏥'],'Permiso':['b-incompleto','📝'],'Falta Injustificada':['b-muyincom','❌'] };
+  el.innerHTML = res.novedades.map(n => {
+    const [bc, ico] = colors[n.tipo] || ['b-gris','📌'];
+    return `<div class="log-item"><div><div style="font-weight:600;">${n.nombre}</div><div style="font-size:11px;color:#888780;">${n.fecha} · ${n.obs || '—'}</div></div><span class="log-badge ${bc}">${ico} ${n.tipo}</span></div>`;
+  }).join('');
+}
+
+// ─── ADMIN: ACTIVAR ────────────────────────────
+async function generarCodigo() {
+  const cedula = document.getElementById('act-target-cedula').value.trim();
+  const tipo   = document.getElementById('act-target-tipo').value;
+  const box    = document.getElementById('codigo-result');
+  if (!cedula) { alert('Ingresa la cédula'); return; }
+
+  const res = await api({ action:'generarCodigo', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId, cedula, tipo });
+  if (!res.ok) { alert('Error: ' + (res.error || 'No se pudo generar')); box.style.display='none'; return; }
+
+  document.getElementById('codigo-nombre').textContent = res.nombre;
+  document.getElementById('codigo-val').textContent    = res.codigo;
+  box.style.display = 'block';
+}
+
+// ─── ADMIN: API KEYS ───────────────────────────
+async function cargarAdminSelect() {
+  const res = await api({ action:'getAdmins', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId });
+  const sel = document.getElementById('apikey-cedula');
+  if (res.ok && res.admins) {
+    sel.innerHTML = res.admins.map(a => `<option value="${a.cedula}">${a.nombre}</option>`).join('');
+  }
+  sel.innerHTML = (res.estado || []).map(w => `<option value="${w.cedula}">${w.nombre}</option>`).join('');
+}
+
+async function guardarApiKey() {
+  const cedula = document.getElementById('apikey-cedula').value;
+  const apikey = document.getElementById('apikey-val').value.trim();
+  if (!apikey) { alert('Ingresa la API key'); return; }
+
+  const res = await api({ action:'guardarApiKey', adminCedula: ST.adminCedula, adminDispId: ST.adminDispId, cedula, apikey });
+  if (res.ok) {
+    document.getElementById('apikey-val').value = '';
+    alert('API key guardada correctamente');
+  } else {
+    alert('Error: ' + (res.error || 'No se pudo guardar'));
+  }
+}
+</script>
+</body>
+</html>
